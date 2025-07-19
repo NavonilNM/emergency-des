@@ -2,7 +2,7 @@
 Param.
 """
 
-from simlogger import SimLogger
+from simulation.simlogger import SimLogger
 
 
 # pylint: disable=too-many-instance-attributes,too-few-public-methods
@@ -127,29 +127,11 @@ class Param:
 
 # Defining the main function
 def main():
-    # defining seed value for the distributions
-    random.seed(11)
 
-    d1=Distributions(default_rng(random.randint(1, 1000)))
+    # Base case
+    base_params = Param()
+    print(base_params.__dict__)
     
-    # Master seed (Generator class) for reproducibility
-    #d1.master_rng = default_rng(seed=42)
-
-    for run in range(0, 6):
-       
-        print(f"     Run {run+1} - Sampling 100 from distribution Volume sampled:")
-        for sampling in range(0, 100):
-            # Simulate some sampling process
-            print(f"{d1.lognorm_dist_volume():.2f}  ", end='')
-        
-        # Reset the seeds for the next run
-        d1.newSeed(default_rng(random.randint(1, 1000)))
-        
-        #print(f"Run {run1+1} - Supply RNG:", d1.rng_supply, 
-        #        "\nHMB RNG:", d1.rng_HMB, 
-        #        "\nDemand RNG:", d1.rng_demand)
-    print("All runs completed.")
-
 
 # Code entry point
 # This ensures that the main function is called when the script is executed
