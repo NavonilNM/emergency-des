@@ -21,5 +21,5 @@ dependencies:
   - distfit=1.8.8
   - pip:
     - kaleido==0.2.1
-    - sim-tools==0.8.0
+    - sim-tools==1.0.0
     - -e .[dev]
