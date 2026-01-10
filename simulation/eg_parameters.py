@@ -83,7 +83,7 @@ class Parameters:
     def __init__(
         self, interarrival_time=5, consultation_time=10,
         number_of_doctors=3, warm_up_period=30, data_collection_period=40,
-        verbose=True
+        verbose=False
     ):
         """
         Initialise Parameters instance.

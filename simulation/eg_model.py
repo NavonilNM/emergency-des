@@ -21,12 +21,20 @@ class Model:
         SimPy resource representing doctors.
     patients : list
         List of Patient objects.
+    results_list : list
+        List of dictionaries with the attributes of each patient.
     arrival_dist : Exponential
         Distribution used to generate random patient inter-arrival times.
     consult_dist : Exponential
         Distribution used to generate length of a doctor's consultation.
     logger : SimLogger
         The logging instance used for logging messages.
+    doctor_time_used : float
+        Total time that doctor resources were used for (minutes).
+    doctor_time_used_correction : float
+        Adjustment for doctor time. Without this, usage is underestimated
+        since patients whose consultations began in warm-up but ended
+        during data collection are excluded.
     """
     def __init__(self, param, run_number):
         """
@@ -56,6 +64,9 @@ class Model:
 
         # Set up attributes to store results
         self.patients = []
+        self.results_list = []
+        self.doctor_time_used = 0
+        self.doctor_time_used_correction = 0
 
         # Initialise distributions
         self.arrival_dist = Exponential(
@@ -156,6 +167,8 @@ class Model:
         patient :
             Instance of the Patient() class representing a single patient.
         """
+        start_wait = self.env.now
+
         # Patient requests access to a doctor (resource)
         with self.doctor.request() as req:
             yield req
@@ -166,13 +179,40 @@ class Model:
             #     sim_time=self.env.now
             # )
 
+            # Record how long patient waited before consultation
+            patient.wait_time = self.env.now - start_wait
+
             if self.param.verbose:
                 print(f"{patient.period} Patient {patient.patient_id} starts consultation " +
                       f"at: {self.env.now:.3f}")
 
             # Sample consultation duration and pass time spent with doctor
-            time_with_doctor = self.consult_dist.sample()
-            yield self.env.timeout(time_with_doctor)
+            patient.time_with_doctor = self.consult_dist.sample()
+            
+            
+            # Add to total doctor time used
+            # If it runs past simulation end, only count the time until end
+            remaining_time = (
+                self.param.warm_up_period +
+                self.param.data_collection_period) - self.env.now
+            self.doctor_time_used += min(
+                patient.time_with_doctor, remaining_time)
+
+            
+            # During warm-up: check if consultation continues past warm-up.
+            # If so, record the portion overlapping with data collection in
+            # doctor_time_used_correction (capped at the simulation end).
+            remaining_warmup = self.param.warm_up_period - self.env.now
+            if remaining_warmup > 0:
+                time_exceeding_warmup = patient.time_with_doctor - remaining_warmup
+                if time_exceeding_warmup > 0:
+                    self.doctor_time_used_correction += min(
+                        time_exceeding_warmup,
+                        self.param.data_collection_period)
+
+            
+            # Pass time spent with the doctor
+            yield self.env.timeout(patient.time_with_doctor)
 
             # Record end time
             if self.param.verbose:
@@ -198,6 +238,7 @@ class Model:
         Reset results.
         """
         self.patients = []
+        self.doctor_time_used = 0
 
     def warmup(self):
         """
@@ -210,6 +251,11 @@ class Model:
             self.reset_results()
             if self.param.verbose:
                 print(f"Warm up period ended at time: {self.env.now}")
+        
+            # Add correction for patients whose consultations began in
+            # warm-up but continued into data collection.
+            self.doctor_time_used += self.doctor_time_used_correction
+
 
     def run(self):
         """
@@ -222,3 +268,6 @@ class Model:
         # Run the simulation
         self.env.run(until=(self.param.warm_up_period +
                             self.param.data_collection_period))
+        
+        # Create list of dictionaries containing each patient's attributes
+        self.results_list = [x.__dict__ for x in self.patients]

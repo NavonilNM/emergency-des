@@ -1,3 +1,6 @@
+import numpy as np
+
+
 class Patient:
     """
     Represents a patient.
@@ -10,6 +13,10 @@ class Patient:
         Time patient entered the system (minutes).
     period : str
         Arrival period (warm up or data collection) with emoji.
+    wait_time : float
+        Time spent waiting for the doctor (minutes).
+    time_with_doctor : float
+        Time spent in consultation with a doctor (minutes).
     """
 
     # This part of the code is for the section RAP - Model Building 
@@ -45,3 +52,5 @@ class Patient:
         self.patient_id = patient_id
         self.period = period
         self.arrival_time = arrival_time
+        self.wait_time = np.nan
+        self.time_with_doctor = np.nan
