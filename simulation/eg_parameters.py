@@ -26,6 +26,11 @@ class Parameters:
         Duration of the warm-up period (minutes).
     data_collection_period : int
         Duration of the data collection period (minutes).
+    number_of_runs : int
+        The number of runs (i.e., replications).
+    cores : int
+        Number of CPU cores to use for parallel execution. For all
+        available cores, set to -1. For sequential execution, set to 1.
     """
     # def __init__(
     #     self, interarrival_time=5, consultation_time=10, number_of_doctors=3, run_length=50, verbose=True
@@ -83,7 +88,7 @@ class Parameters:
     def __init__(
         self, interarrival_time=5, consultation_time=10,
         number_of_doctors=3, warm_up_period=30, data_collection_period=40,
-        verbose=False
+        number_of_runs=5, cores=1, verbose=False
     ):
         """
         Initialise Parameters instance.
@@ -102,10 +107,18 @@ class Parameters:
             Duration of the data collection period (minutes).
         verbose : bool
             Whether to print messages as simulation runs.
+        number_of_runs : int
+            The number of runs (i.e., replications).
+        cores : int
+            Number of CPU cores to use for parallel execution. For all
+            available cores, set to -1. For sequential execution, set to 1.
         """
         self.interarrival_time = interarrival_time
         self.consultation_time = consultation_time
         self.number_of_doctors = number_of_doctors
         self.warm_up_period = warm_up_period
         self.data_collection_period = data_collection_period
+        self.number_of_runs = number_of_runs
+        #for parallel execution
+        self.cores = cores
         self.verbose = verbose

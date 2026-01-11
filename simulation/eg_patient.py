@@ -17,6 +17,10 @@ class Patient:
         Time spent waiting for the doctor (minutes).
     time_with_doctor : float
         Time spent in consultation with a doctor (minutes).
+    end_time : float
+        Time that patient leaves (minutes), or NaN if remain in system.
+    time_with_doctor : float
+        Time spent in consultation with a doctor (minutes).
     """
 
     # This part of the code is for the section RAP - Model Building 
@@ -53,4 +57,6 @@ class Patient:
         self.period = period
         self.arrival_time = arrival_time
         self.wait_time = np.nan
+        self.time_with_doctor = np.nan
+        self.end_time = np.nan
         self.time_with_doctor = np.nan

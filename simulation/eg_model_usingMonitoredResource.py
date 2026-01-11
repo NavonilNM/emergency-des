@@ -4,9 +4,9 @@ from simulation.eg_parameters import Parameters
 from simulation.eg_patient import Patient
 from simulation.eg_simlogger import SimLogger
 from sim_tools.distributions import Exponential, Normal, DistributionRegistry
+from simulation.eg_monitoredResource import MonitoredResource
 
-
-class Model:
+class ModelMR:
     """
     Simulation model.
 
@@ -36,14 +36,6 @@ class Model:
         Adjustment for doctor time. Without this, usage is underestimated
         since patients whose consultations began in warm-up but ended
         during data collection are excluded.
-    area_n_in_system : list of float
-        List containing incremental area contributions used for
-        time-weighted statistics of the number of patients in the system.
-    time_last_n_in_system : float
-        Simulation time at last update of the number-in-system statistic.
-    n_in_system: int
-        Current number of patients present in the system, including
-        waiting and being served.
     """
     def __init__(self, param, run_number):
         """
@@ -63,7 +55,7 @@ class Model:
         self.env = simpy.Environment()
 
         # Create resource
-        self.doctor = simpy.Resource(
+        self.doctor = MonitoredResource(
             self.env, capacity=self.param.number_of_doctors
         )
 
@@ -74,12 +66,14 @@ class Model:
         # Set up attributes to store results
         self.patients = []
         self.results_list = []
-        self.doctor_time_used = 0
-        self.doctor_time_used_correction = 0
-        # .. for mean number of patients in system
+        # Adding to follow code for warm-up section
         self.area_n_in_system = [0]
         self.time_last_n_in_system = self.env.now
         self.n_in_system = 0
+
+        # Commenting to follow code for warm-up section
+        # self.doctor_time_used = 0
+        # self.doctor_time_used_correction = 0
 
         # Initialise distributions
         self.arrival_dist = Exponential(
@@ -139,7 +133,7 @@ class Model:
     #         # Start process of consultation
     #         self.env.process(self.consultation(patient))
 
-
+    #Adding to follow code for warm-up section
     def update_n_in_system(self, inc):
         """
         Update the time-weighted statistics for number of patients in system.
@@ -179,7 +173,7 @@ class Model:
                               arrival_time=self.env.now)
             self.patients.append(patient)
 
-            # Update the number in the system
+            # Addition to follow code on Warmup - Update the number in the system
             self.update_n_in_system(inc=1)
 
             # Print arrival time
@@ -215,52 +209,55 @@ class Model:
             # Record how long patient waited before consultation
             patient.wait_time = self.env.now - start_wait
 
-
             if self.param.verbose:
                 print(f"{patient.period} Patient {patient.patient_id} starts consultation " +
-                      f"at: {self.env.now:.3f}" + 
-                      f" leaves at: {patient.end_time:.3f}")
+                      f"at: {self.env.now:.3f}")
 
             # Sample consultation duration and pass time spent with doctor
             patient.time_with_doctor = self.consult_dist.sample()
-            
-         
 
-
-            # Add to total doctor time used
-            # If it runs past simulation end, only count the time until end
-            remaining_time = (
-                self.param.warm_up_period +
-                self.param.data_collection_period) - self.env.now
-            self.doctor_time_used += min(
-                patient.time_with_doctor, remaining_time)
-
-            
-            # During warm-up: check if consultation continues past warm-up.
-            # If so, record the portion overlapping with data collection in
-            # doctor_time_used_correction (capped at the simulation end).
-            remaining_warmup = self.param.warm_up_period - self.env.now
-            if remaining_warmup > 0:
-                time_exceeding_warmup = patient.time_with_doctor - remaining_warmup
-                if time_exceeding_warmup > 0:
-                    self.doctor_time_used_correction += min(
-                        time_exceeding_warmup,
-                        self.param.data_collection_period)
-
-            
-            # Pass time spent with the doctor
+            ##Adding to follow code for warm-up section
             yield self.env.timeout(patient.time_with_doctor)
 
+            # Update number in system
             self.update_n_in_system(inc=-1)
 
             # Record end time
             patient.end_time = self.env.now
             if self.param.verbose:
-                # print(f"{patient.period} Patient {patient.patient_id} " +
-                #       f"leaves at: {self.env.now:.3f}")
                 print(f"{patient.period} Patient {patient.patient_id} " +
                       f"leaves at: {patient.end_time:.3f}")
-                
+            
+            
+            ## Commenting to follow code for warm-up section
+            # # Add to total doctor time used
+            # # If it runs past simulation end, only count the time until end
+            # remaining_time = (
+            #     self.param.warm_up_period +
+            #     self.param.data_collection_period) - self.env.now
+            # self.doctor_time_used += min(
+            #     patient.time_with_doctor, remaining_time)
+
+            
+            # # During warm-up: check if consultation continues past warm-up.
+            # # If so, record the portion overlapping with data collection in
+            # # doctor_time_used_correction (capped at the simulation end).
+            # remaining_warmup = self.param.warm_up_period - self.env.now
+            # if remaining_warmup > 0:
+            #     time_exceeding_warmup = patient.time_with_doctor - remaining_warmup
+            #     if time_exceeding_warmup > 0:
+            #         self.doctor_time_used_correction += min(
+            #             time_exceeding_warmup,
+            #             self.param.data_collection_period)
+
+            
+            # # Pass time spent with the doctor
+            # yield self.env.timeout(patient.time_with_doctor)
+
+            # # Record end time
+            # if self.param.verbose:
+            #     print(f"{patient.period} Patient {patient.patient_id} " +
+            #           f"leaves at: {self.env.now:.3f}")
 
     # This part of the code is for the section RAP - Model Building  
     # def run(self):
@@ -281,8 +278,9 @@ class Model:
         Reset results.
         """
         self.patients = []
-        self.doctor_time_used = 0
+        self.doctor.init_results()
 
+        ##Adding to follow code for warm-up section
         # For number in system, we reset area and time but not the count, as
         # it should include any remaining warm-up patients in the count
         self.area_n_in_system = [0]
@@ -301,9 +299,10 @@ class Model:
             if self.param.verbose:
                 print(f"Warm up period ended at time: {self.env.now}")
         
+            ## Commenting to follow code for warm-up section
             # Add correction for patients whose consultations began in
             # warm-up but continued into data collection.
-            self.doctor_time_used += self.doctor_time_used_correction
+            # self.doctor_time_used += self.doctor_time_used_correction
 
 
     def run(self):
@@ -318,8 +317,13 @@ class Model:
         self.env.run(until=(self.param.warm_up_period +
                             self.param.data_collection_period))
         
+        # At simulation end, update time-weighted statistics by accounting
+        # for the time from the last event up to the simulation finish.
+        self.doctor.update_time_weighted_stats()
+        
+        ##Adding to follow code for warm-up section
         # Run final calculation of number in system
         self.update_n_in_system(inc=0)
-
+        
         # Create list of dictionaries containing each patient's attributes
         self.results_list = [x.__dict__ for x in self.patients]

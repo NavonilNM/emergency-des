@@ -1,5 +1,7 @@
+import numpy as np
 import pandas as pd
 from simulation.eg_model import Model
+
 
 class Runner:
     """
@@ -10,6 +12,7 @@ class Runner:
     param : Parameters
         Simulation parameters.
     """
+    
     def __init__(self, param):
         """
         Initialise a new instance of the Runner class.
@@ -21,6 +24,7 @@ class Runner:
         """
         self.param = param
 
+    
     def run_single(self, run):
         """
         Runs the simulation once and performs results calculations.
@@ -41,6 +45,16 @@ class Runner:
         # Patient results
         patient_results = pd.DataFrame(model.results_list)
         patient_results["run"] = run
+        patient_results["time_in_system"] = (
+                patient_results["end_time"] - patient_results["arrival_time"]
+            )
+        # For each patient, if they haven't seen a doctor yet, calculate
+        # their wait as current time minus arrival, else set as missing
+        patient_results["unseen_wait_time"] = np.where(
+            patient_results["time_with_doctor"].isna(),
+            model.env.now - patient_results["arrival_time"], np.nan
+        )
+
 
         # Run results
         run_results = {
@@ -53,7 +67,14 @@ class Runner:
             "mean_utilisation": model.doctor_time_used / (
                 self.param.number_of_doctors *
                 self.param.data_collection_period
-            )
+            ),
+            "mean_time_in_system": patient_results["time_in_system"].mean(),
+            "mean_patients_in_system": (
+                sum(model.area_n_in_system) /
+                self.param.data_collection_period
+            ),
+            "unseen_count": patient_results["time_with_doctor"].isna().sum(),
+            "unseen_wait_time": patient_results["unseen_wait_time"].mean()
         }
 
         return {
