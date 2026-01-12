@@ -78,7 +78,7 @@ class RunnerMR:
                 self.param.data_collection_period
             ),
             ## Adding to follow code for warm-up section
-                        "mean_time_in_system": patient_results["time_in_system"].mean(),
+            "mean_time_in_system": patient_results["time_in_system"].mean(),
             "mean_patients_in_system": (
                 sum(model.area_n_in_system) /
                 self.param.data_collection_period
@@ -135,7 +135,7 @@ class RunnerMR:
                     df=count-1,
                     loc=mean,
                     scale=st.sem(data))
-            return mean, std_dev, ci_lower, ci_upper
+        return mean, std_dev, ci_lower, ci_upper
 
 
     def run_reps(self):
