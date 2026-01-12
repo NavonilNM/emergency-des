@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Get the conda environment's jupyter path
-CONDA_JUPYTER=$(dirname "$(which python)")/jupyter
+CONDA_JUPYTER=$(dirname "$(which python)")/Scripts/jupyter
 
 run_notebook() {
     local nb="$1"
