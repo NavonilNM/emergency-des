@@ -56,6 +56,7 @@ class Model:
         run_number : int
             Run number for random seed generation.
         """
+       
         self.param = param
         self.run_number = run_number
 
